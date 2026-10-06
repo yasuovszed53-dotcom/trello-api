@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Updated by trungquandev.com's author on August 17 2023
  * YouTube: https://youtube.com/@trungquandev
@@ -5,28 +6,49 @@
  */
 
 import express from 'express'
-import { mapOrder } from '~/utils/sorts.js'
+import exitHook from 'async-exit-hook'
+import { CONNECT_DB, CLOSE_DB } from '~/config/mongodb'
+import { env } from '~/config/environment'
+import { APIs_V1 } from '~/routes/v1'
 
-const app = express()
+const START_SERVER = () => {
+  const app = express()
 
-const hostname = 'localhost'
-const port = 8017
+  app.use('/v1', APIs_V1)
 
-app.get('/', (req, res) => {
-  // Test Absolute import mapOrder
-  console.log(mapOrder(
-    [ { id: 'id-1', name: 'One' },
-      { id: 'id-2', name: 'Two' },
-      { id: 'id-3', name: 'Three' },
-      { id: 'id-4', name: 'Four' },
-      { id: 'id-5', name: 'Five' } ],
-    ['id-5', 'id-4', 'id-2', 'id-3', 'id-1'],
-    'id'
-  ))
-  res.end('<h1>Hello World!</h1><hr>')
-})
-
-app.listen(port, hostname, () => {
+  app.listen(env.APP_PORT, env.APP_HOST, () => {
   // eslint-disable-next-line no-console
-  console.log(`Hello Trung Quan Dev, I am running at ${ hostname }:${ port }/`)
-})
+    console.log(`3. Hello ${env.AUTHOR}, I am running at http://${ env.APP_HOST }:${ env.APP_PORT }/`)
+  })
+
+  //Thực hiện các tác vụ cleanup trước khi dừng app lại
+  exitHook(() =>{
+    console.log('4. Server is shutting down....')
+    CLOSE_DB()
+    console.log('5. Disconnected to MongoDB Clould Atlast...')
+  })
+}
+
+//IIFE
+(async () => {
+  try {
+    console.log('1. Connecting to MongoDB Clould Atlast...')
+    await CONNECT_DB()
+    console.log('2. Connected to MongoDB Cloud Atlast!')
+
+//     Khởi động sever back-end sau khi connect database thành công
+    START_SERVER()
+  } catch (error) {
+    console.error(error)
+    process.exit(0)
+  }
+})()
+
+// // Chỉ khi kết nối tới DB thành công thì mới Start Server Backend lên
+// CONNECT_DB()
+//   .then(() => console.log('Connected to MongoDB Cloud Atlas!'))
+//   .then(() => START_SERVER())
+//   .catch(error => {
+//     console.error(error)
+//     process.exit(0)
+//   })
